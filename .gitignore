@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+.venv/
+
+# Large data: raw downloads, extracted volumes and preprocessed slices.
+# These are re-created by scripts/download_data.py and scripts/preprocess.py.
+data/
+
+# Training outputs (checkpoints are large); final metrics/figures live in results/
+runs/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

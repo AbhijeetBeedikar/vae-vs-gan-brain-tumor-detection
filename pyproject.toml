@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brainad"
+version = "0.1.0"
+description = "Unsupervised brain-tumor detection in MRI: VAE vs f-AnoGAN vs autoencoder trained on healthy brains (STAT 453 project)"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "nibabel",
+    "nilearn",   # only used for the bundled MNI152 template
+    "pyyaml",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

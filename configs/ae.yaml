@@ -1,0 +1,7 @@
+# Plain (deterministic) autoencoder baseline: does generative modelling add value?
+defaults: base.yaml
+
+model:
+  name: ae
+  latent_dim: 128
+  base_channels: 32

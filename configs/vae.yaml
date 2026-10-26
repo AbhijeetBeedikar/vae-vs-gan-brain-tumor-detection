@@ -1,0 +1,8 @@
+# Variational autoencoder (Kingma & Welling, 2014) with DCGAN-style layers.
+defaults: base.yaml
+
+model:
+  name: vae
+  latent_dim: 128
+  base_channels: 32
+  beta: 1.0   # weight on the KL term (beta=1 is the standard VAE)

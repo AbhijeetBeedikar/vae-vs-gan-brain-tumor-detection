@@ -1,0 +1,43 @@
+# Shared settings for every experiment.
+# Model-specific files (ae.yaml, vae.yaml, fanogan.yaml) start from this file
+# and override only what they need, so the preprocessing, data split and
+# anomaly-map post-processing are identical across models.
+
+seed: 42
+
+paths:
+  raw_dir: data/raw              # downloaded .tar archives
+  extracted_dir: data/extracted  # unpacked NIfTI volumes
+  processed_dir: data/processed  # preprocessed 2D slices (.npz)
+  runs_dir: runs                 # checkpoints + training logs (git-ignored)
+  results_dir: results           # final metrics + figures (committed)
+
+preprocessing:
+  slice_size: 128          # slices are stored at 128x128; 64x64 is made on the fly
+  slice_stride: 2          # keep every 2nd axial slice (neighbours are near-duplicates)
+  min_brain_fraction: 0.3  # skip top/bottom slices whose brain area < 30% of the largest
+  registration:
+    levels_mm: [4, 2]      # coarse-to-fine resolutions used by the affine registration
+    iterations: [150, 100] # optimisation steps at each level
+  num_workers: 6           # parallel processes for preprocessing
+
+splits:
+  ixi_fractions: [0.8, 0.1, 0.1]  # train / val / healthy-test, split by subject
+  msd_val_fraction: 0.1           # small labelled subset used ONLY to pick the threshold
+
+data:
+  image_size: 64           # proposal: 64x64 for fast experiments, 128x128 for the final
+
+training:
+  batch_size: 64
+  epochs: 40
+  lr: 0.0002
+  hflip: true              # random left-right flips (brains are roughly symmetric)
+  num_threads: 12          # CPU threads for PyTorch
+
+anomaly:
+  residual: positive       # 'positive' = max(x - x_hat, 0) (tumours are bright on T2); 'abs' = |x - x_hat|
+  smoothing_sigma: 1.0     # Gaussian blur of the anomaly map, in pixels
+  mask_erosion: 2          # shrink the brain mask by N pixels to ignore edge artefacts
+  top_percent: 1.0         # slice score = mean of the top 1% anomaly values in the brain
+  min_tumor_pixels: 10     # a slice counts as "tumour" if it has at least this many tumour pixels

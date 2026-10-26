@@ -1,0 +1,17 @@
+# f-AnoGAN (Schlegl et al., 2019): a WGAN-GP plus an encoder into its latent space.
+# Training has two stages: (1) the GAN, (2) the encoder with G and D frozen.
+defaults: base.yaml
+
+model:
+  name: fanogan
+  latent_dim: 128
+  base_channels: 32
+  n_critic: 5            # critic updates per generator update (WGAN-GP default)
+  gp_weight: 10.0        # gradient-penalty weight (lambda in Gulrajani et al., 2017)
+  kappa: 1.0             # weight of the discriminator-feature loss in the izi_f encoder loss
+
+training:
+  gan_epochs: 60         # stage 1
+  encoder_epochs: 30     # stage 2
+  gan_lr: 0.0001
+  gan_betas: [0.0, 0.9]  # Adam betas recommended for WGAN-GP
