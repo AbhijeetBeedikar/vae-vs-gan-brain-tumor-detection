@@ -5,7 +5,7 @@ __pycache__/
 .pytest_cache/
 
 # Virtual environment
-.venv/
+.venv*/
 
 # Large data: raw downloads, extracted volumes and preprocessed slices.
 # These are re-created by scripts/download_data.py and scripts/preprocess.py.

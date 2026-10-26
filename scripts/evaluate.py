@@ -83,11 +83,13 @@ def main() -> None:
     results_dir = None
 
     jobs = []
-    if args.baseline:
-        jobs.append(("intensity", IntensityBaseline(), load_config(args.config), None))
     for run in args.runs:
         model, cfg = load_trained(run, device)
         jobs.append((cfg["model"]["name"], model, cfg, Path(run)))
+    if args.baseline:
+        # Score the baseline with the same settings (e.g. image size) as the trained models.
+        base_cfg = jobs[0][2] if jobs else load_config(args.config)
+        jobs.insert(0, ("intensity", IntensityBaseline(), base_cfg, None))
 
     for name, model, cfg, run in jobs:
         results_dir = Path(cfg["paths"]["results_dir"])
