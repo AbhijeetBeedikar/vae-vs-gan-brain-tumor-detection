@@ -1,0 +1,43 @@
+{
+  "model": "fanogan",
+  "image_size": 64,
+  "main_residual": "positive",
+  "n_slices": {
+    "ixi_test": 3364,
+    "msd_val": 2784,
+    "msd_test": 25288
+  },
+  "n_subjects": {
+    "ixi_test": 58,
+    "msd_val": 48,
+    "msd_test": 436
+  },
+  "positive": {
+    "threshold": 0.1467266177101137,
+    "val_dice": 0.5214958532614902,
+    "dice_global": 0.517220713993082,
+    "dice_subject_mean": 0.47388255713252464,
+    "dice_subject_std": 0.1829780526928555,
+    "pixel_auroc": 0.8549849402445734,
+    "pixel_auprc": 0.5138279659655148,
+    "slice_auroc_msd": 0.8669702371869112,
+    "slice_auroc_vs_healthy": 0.9310479898333344,
+    "healthy_fpr": 0.013101754588271754,
+    "healthy_slices_flagged": 0.4931629002094269,
+    "tumour_prevalence": 0.0924423560500145
+  },
+  "abs": {
+    "threshold": 0.17004078877728077,
+    "val_dice": 0.48326009419276017,
+    "dice_global": 0.4830199541736894,
+    "dice_subject_mean": 0.435254425026553,
+    "dice_subject_std": 0.18741450904647006,
+    "pixel_auroc": 0.8636898771529163,
+    "pixel_auprc": 0.47708754637875256,
+    "slice_auroc_msd": 0.860924693062191,
+    "slice_auroc_vs_healthy": 0.902885218850386,
+    "healthy_fpr": 0.026224004598181628,
+    "healthy_slices_flagged": 0.6254459023475647,
+    "tumour_prevalence": 0.0924423560500145
+  }
+}

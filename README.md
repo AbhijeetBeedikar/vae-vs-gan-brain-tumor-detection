@@ -19,7 +19,55 @@ Models compared (all with DCGAN-style convolutional layers, 128-d latent code):
 | **AE** | Plain deterministic autoencoder | baseline: does generative modelling help? |
 | **Intensity** | "bright on T2 = tumour" (no learning) | sanity-check baseline |
 
-<!-- RESULTS -->
+## Results (64×64)
+
+Tested on 436 MSD tumour subjects (90% of MSD) and 58 healthy IXI test
+subjects. The detection threshold was chosen on the other 48 MSD subjects.
+Main setting: positive residual, Gaussian smoothing, eroded brain mask.
+Full tables, including the `|x − x̂|` ablation, are in
+[results/summary.md](results/summary.md).
+
+| Model | Dice (subject mean ± sd) | Dice (global) | Pixel AUROC | Pixel AUPRC | Slice AUROC (MSD) | Slice AUROC (vs IXI) | Healthy pixel FPR |
+|---|---|---|---|---|---|---|---|
+| Intensity baseline | 0.394 ± 0.243 | 0.431 | 0.854 | 0.351 | 0.779 | 0.772 | 4.52% |
+| AE | 0.380 ± 0.161 | 0.420 | 0.796 | 0.402 | 0.869 | 0.865 | 4.01% |
+| **VAE** | **0.514 ± 0.227** | **0.566** | **0.894** | **0.575** | 0.867 | 0.929 | **1.21%** |
+| f-AnoGAN | 0.474 ± 0.183 | 0.517 | 0.855 | 0.514 | 0.867 | **0.931** | 1.31% |
+
+![Example anomaly maps](results/comparison.png)
+
+*Green: expert tumour outline. Cyan: predicted tumour at the chosen
+threshold. The intensity baseline reconstructs nothing, so its "map" is just
+the input.*
+
+**Findings**
+
+* **Both generative models beat the plain autoencoder and the intensity
+  baseline.** The VAE is best on every pixel-level metric. Its Dice is 0.51,
+  against 0.38 for the AE.
+* **The AE reconstructs "too well".** It has by far the lowest error on
+  healthy validation scans (see
+  [training curves](results/training_curves.png)), but it also partly copies
+  the tumour into its reconstruction. Its anomaly maps are therefore weak and
+  noisy, and it does no better than "bright = tumour" on Dice. Good
+  reconstruction is not the goal. Reconstructing *only healthy anatomy* is.
+* **The VAE vs f-AnoGAN trade-off.** The VAE gives smooth, average-looking
+  brains, so the tumour stands out as one compact blob. f-AnoGAN gives sharper
+  reconstructions with realistic folds. However, small misplacements of those
+  folds produce scattered false positives, which lower its Dice (0.47).
+  At slice level the two are equal: both reach AUROC ≈ 0.93 for separating
+  tumour slices from healthy ones.
+* **The positive residual helps.** Every model improves when only pixels
+  brighter than the reconstruction count (for example, VAE Dice 0.484 → 0.514;
+  f-AnoGAN healthy FPR 2.6% → 1.3%).
+* **Large variation between subjects.** The ± column is wide (0.18–0.24).
+  Small tumours, and tumours that are not bright on T2, are often missed by
+  every method.
+
+Training settings used: 40 epochs for AE/VAE; f-AnoGAN with 60 WGAN-GP
+epochs plus 30 encoder epochs; batch 64, 128-d latent, 32 base channels.
+All trained on CPU (about 3 h for AE/VAE and 6 h for f-AnoGAN, run in
+parallel).
 
 ## Repository layout
 
@@ -64,6 +112,10 @@ python scripts/preprocess.py
 python scripts/train.py --config configs/vae.yaml            # also ae.yaml, fanogan.yaml
 python scripts/evaluate.py --baseline --runs runs/ae_64 runs/vae_64 runs/fanogan_64
 ```
+
+On Windows-on-ARM (e.g. Snapdragon) the x64 PyTorch CPU build, running under
+emulation, trained about 2.6× faster here than the native ARM64 build,
+because the native build has no oneDNN kernels.
 
 Any config value can be overridden from the command line, e.g.
 `--set data.image_size=128 training.epochs=60`.
