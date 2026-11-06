@@ -61,13 +61,12 @@ reconstruct. We compare a variational autoencoder (VAE), f-AnoGAN (a Wasserstein
 GAN with an encoder) and a plain autoencoder (AE) under one shared pipeline.
 Models are trained on 462 healthy IXI subjects (T2) and tested on 436 glioma
 patients from the Medical Segmentation Decathlon. So far we have built the full
-pipeline, including our own PyTorch affine registration because the standard
-tools do not run on our hardware, and trained and evaluated all three models at
-$64\times64$. The VAE is best (subject Dice $0.51$, pixel AUROC $0.89$), f-AnoGAN
+pipeline, including our own PyTorch affine registration, and evaluated all three
+models at $64\times64$. In preliminary single-seed runs the VAE is best (subject
+Dice $0.51$, pixel AUROC $0.89$), f-AnoGAN
 is close (Dice $0.47$) with the fewest complete misses, and the plain AE does not
 beat a simple ``bright on T2'' intensity baseline on Dice ($0.38$ vs.\ $0.39$).
-Our main challenges were registration failures on about 30\% of scans and slow
-CPU training. Next we will move to the proposal's $128\times128$ resolution, add
+Our main challenges were registration failures and CPU-only training. Next we will move to the proposal's $128\times128$ resolution, add
 seeds and confidence intervals, and sweep the VAE's KL weight and latent size.
 \end{abstract}
 
@@ -87,8 +86,7 @@ the model is shown a scan with a tumor, it ``repairs'' the image toward the
 nearest healthy-looking brain $\hat{\mathbf{x}}$, and the residual
 $\mathbf{x}-\hat{\mathbf{x}}$ highlights what does not belong. Because no tumor
 labels are used for training, this \emph{unsupervised anomaly detection} could
-in principle flag abnormalities nobody trained it to find. This makes it
-attractive as a ``second reader'' for radiologists.
+flag abnormalities nobody trained it to find.
 
 Generative models are central to this approach. A plain autoencoder only learns
 to copy its input, and with enough capacity it copies tumors too. A VAE (latent
@@ -106,12 +104,10 @@ post-processing for every model.
 
 \textbf{Generative models.} VAEs~\cite{kingma2014vae} maximize a lower bound on
 the data likelihood with an encoder--decoder pair and a Gaussian latent prior.
-GANs~\cite{goodfellow2014gan} train a generator against a discriminator.
-DCGAN~\cite{radford2016dcgan} made GANs workable on images with strided
-convolutions and batch normalization, and the Wasserstein GAN with gradient
-penalty (WGAN-GP)~\cite{gulrajani2017wgangp} stabilized training further. We use
-DCGAN-style layers for all models so that differences come from the training
-objective, not the architecture.
+GANs~\cite{goodfellow2014gan} train a generator against a discriminator;
+DCGAN~\cite{radford2016dcgan} and WGAN-GP~\cite{gulrajani2017wgangp} made this
+stable on images. We use DCGAN-style layers for all models so that differences
+come from the training objective, not the architecture.
 
 \textbf{GANs for anomaly detection.} AnoGAN~\cite{schlegl2017anogan} was the first
 to use a GAN trained on healthy images to localize anomalies in medical images.
@@ -133,19 +129,13 @@ threshold matched or beat these deep models, because tumors are simply
 hyperintense. More recent work uses diffusion models~\cite{pinaya2022diffusion},
 but VAEs and GANs remain the standard reference points.
 
-\textbf{Our position.} Following these findings, we (i)~use only public data,
-IXI~\cite{ixi} and MSD Task01~\cite{antonelli2022msd,menze2015brats};
-(ii)~share every preprocessing and scoring step between models; (iii)~include a
-plain AE to test whether \emph{generative} modelling helps; and (iv)~include the
-intensity baseline that \citet{meissen2021challenging} found to be competitive.
+\textbf{Our position.} We therefore use only public data~\cite{ixi,antonelli2022msd,menze2015brats},
+share all preprocessing and scoring between models, and add a plain AE and the
+intensity baseline of \citet{meissen2021challenging} as controls.
 
 %=============================================================================
 \section{Methods (Implemented)}
 %=============================================================================
-
-All code is implemented in PyTorch, version-controlled in git and covered by 19
-unit and end-to-end tests. Every model and baseline below has been trained and
-evaluated.
 
 \subsection{Preprocessing pipeline}
 \label{sec:preproc}
@@ -176,15 +166,11 @@ T2-like template from its gray- and white-matter probability maps
 \textbf{Challenge 2: registration failures.} In our first full run, about 30\%
 of IXI scans registered badly (NCC $\approx 0$, with the eyes inside the brain
 mask). Head tilt and a poor centre-of-mass start trapped the optimizer in local
-minima, and trying several starting shifts did not help. What worked was a coarse grid search, at 6\,mm, over
-pitch ($\pm 25^\circ$), anterior and vertical shifts ($\pm 20$ and $\pm 40$\,mm)
-and scale ($0.8$--$1.0$). The three best starting points are each refined, and
-the best of them initializes the main optimization. After this change all 578
-IXI and 484 MSD scans pass a visual check. Median NCC is $0.47$ for IXI and
-$0.25$ for MSD. We confirmed that the lowest MSD scores belong to correctly
-aligned scans with very large tumors, not to failed registrations.
-Preprocessing takes about 25\,s per scan, or 40--45 minutes per dataset with 6
-workers.
+minima. What worked was a coarse 6\,mm grid search over pitch ($\pm 25^\circ$),
+shifts ($\pm 20$/$\pm 40$\,mm) and scale ($0.8$--$1.0$), refining the three best
+starts. All 578 IXI and 484 MSD scans then pass a visual check (median NCC
+$0.47$ and $0.25$); the lowest MSD scores are well-aligned scans with very large
+tumors.
 
 \subsection{Models}
 
@@ -220,8 +206,7 @@ where $f$ denotes the critic's last feature map and $\kappa=1$.
 
 \subsection{Anomaly scoring}
 
-Gliomas and the swelling around them are bright on T2, so our main anomaly map
-keeps only the \emph{positive} residual:
+Following (A3), our main anomaly map keeps only the \emph{positive} residual:
 \begin{equation}
 A = \big(g_{\sigma} * \max(\mathbf{x}-\hat{\mathbf{x}},\,0)\big)\odot M_{\ominus},
 \end{equation}
@@ -233,13 +218,35 @@ Dice on a held-out MSD validation set. A slice's score is the mean of its top
 $|\mathbf{x}-\hat{\mathbf{x}}|$ as an ablation. The \emph{intensity baseline}
 uses $\hat{\mathbf{x}}=\mathbf{0}$, so it detects ``bright = tumor''.
 
+\subsection{Assumptions}
+\label{sec:assumptions}
+
+We state the method's assumptions explicitly, since each can fail.
+\textbf{(A1) Healthy training data:} every IXI scan is free of pathology (IXI
+volunteers were not screened for incidental findings).
+\textbf{(A2) Anomalies are not reconstructed:} a model trained only on healthy
+anatomy maps a tumor to healthy tissue. This requires that it cannot simply
+copy its input; the AE shows this can fail (\cref{sec:results}).
+\textbf{(A3) Tumors are bright on T2:} edema and most tumor tissue are
+hyperintense, so we score only $\mathbf{x}-\hat{\mathbf{x}}>0$; dark parts such
+as necrotic cores are missed.
+\textbf{(A4) Comparable inputs:} after affine registration, one shared template
+mask and 99th-percentile scaling, the residual reflects pathology rather than
+scanner or site differences between IXI and MSD. Affine alignment does not match
+individual folds, and the mask is approximate at the brain border.
+\textbf{(A5) Independent 2D slices:} slices are scored without 3D context, and
+left--right flips assume healthy brains are roughly symmetric.
+\textbf{(A6) Labels only for the threshold:} the merged whole-tumor mask is the
+reference, and one global $\tau$, chosen on 48 labelled MSD subjects assumed to
+match the test distribution, is used for all subjects.
+\textbf{(A7) VAE likelihood:} the summed squared error corresponds to a Gaussian
+decoder with the same fixed variance for every pixel.
+
 \textbf{Challenge 3: compute.} All results so far were run without a GPU, on a
-Windows laptop with an ARM processor. On the native ARM64 PyTorch build
-the AE trained at only 257 images/s. The x64 build, running under Windows
-emulation, uses optimized oneDNN kernels and reached 670 images/s. We therefore
-train with the x64 build, running all three models in parallel with 4 threads
-each. This compute limit is why our first results use the proposal's
-$64\times64$ ``fast experiment'' setting.
+Windows laptop with an ARM processor. The x64 PyTorch build under emulation
+(oneDNN kernels) trained 2.6$\times$ faster than the native ARM64 build (670 vs.\
+257 images/s), so we use it, with the three models in parallel. This limit is why
+we use the proposal's $64\times64$ ``fast experiment'' setting.
 
 %=============================================================================
 \section{Experiments}
@@ -294,19 +301,18 @@ pixels make up 9.2\% of MSD test brain pixels.
 \textbf{Training:} Adam with learning rate $2{\cdot}10^{-4}$ and batch size 64,
 random left--right flips, 40 epochs for AE and VAE. f-AnoGAN uses 60 WGAN-GP
 epochs (learning rate $10^{-4}$, $\beta=(0,0.9)$) followed by 30 encoder epochs.
-For each model we keep the checkpoint with the lowest healthy validation MSE.
-Wall-clock time on CPU was 2.9\,h each for AE and VAE and 6.3\,h for f-AnoGAN
-(5.4\,h of which was the GAN stage).
+We keep the checkpoint with the lowest healthy validation MSE. Training took
+2.9\,h for AE and VAE and 6.3\,h for f-AnoGAN on CPU.
 \textbf{Metrics} follow the proposal: Dice, pixel AUROC and AUPRC, two slice
 AUROCs, and the false-positive rate on healthy IXI test pixels.
 
 \subsection{Preliminary results}
+\label{sec:results}
 
 \textbf{Training behaved as expected} (\cref{fig:curves}). The AE reaches by far
 the lowest healthy reconstruction error ($2.1\cdot10^{-3}$, vs.\
 $4.7\cdot10^{-3}$ for the VAE and $5.6\cdot10^{-3}$ for f-AnoGAN). The
-Wasserstein estimate falls steadily from 35.5 to 1.5 without collapse, and GAN
-samples show realistic anatomy.
+Wasserstein estimate falls steadily from 35.5 to 1.5 without collapse.
 
 \begin{figure}[t]
 \centering
@@ -316,16 +322,16 @@ the f-AnoGAN critic's Wasserstein estimate during GAN training.}
 \label{fig:curves}
 \end{figure}
 
-\textbf{Generative models win, and the AE is the cautionary tale}
-(\cref{tab:main}). The VAE is best on every pixel-level metric. It improves
-subject Dice by $+0.13$ over both the AE and the intensity baseline and flags
-3.7$\times$ fewer healthy pixels. f-AnoGAN comes second on pixel metrics and
+\textbf{The VAE and f-AnoGAN outperform the AE and intensity baseline on
+subject-level Dice in our preliminary experiments} (\cref{tab:main}). The VAE is
+best on every pixel-level metric. It improves subject Dice by about $0.13$ over
+the AE and $0.12$ over the intensity baseline, while reducing healthy-pixel
+false positives by factors of 3.3 and 3.7, respectively. f-AnoGAN comes second on pixel metrics and
 ties the VAE at slice level (AUROC $0.93$ vs.\ healthy IXI). The plain AE, despite
 reconstructing healthy brains best, has the \emph{lowest} pixel AUROC
 ($0.80$). \Cref{fig:examples} shows why: it reconstructs part of the tumor too,
-so the residual misses it. Good reconstruction is not the goal; reconstructing
-\emph{only} healthy anatomy is. This confirms the motivation for constraining the
-latent space. The intensity baseline is strong at pixel level (AUROC $0.85$),
+so the residual misses it, violating (A2): good reconstruction is not the goal;
+reconstructing \emph{only} healthy anatomy is. The intensity baseline is strong at pixel level (AUROC $0.85$),
 in line with \citet{meissen2021challenging}, but poor at slice level ($0.77$),
 since many bright healthy structures such as ventricles and CSF also trigger it.
 
@@ -336,8 +342,8 @@ $0.474\to0.435$, AE $0.380\to0.334$). The healthy FPR of f-AnoGAN doubles
 
 \textbf{Small tumors are the main failure mode} (\cref{fig:size}). Splitting
 test subjects into thirds by tumor size, VAE Dice rises from $0.34$ (small) to
-$0.65$ (large), and every model shows this pattern. The groups also separate the
-two generative models. The VAE leads on large tumors ($0.65$ vs.\ $0.57$), but
+$0.65$ (large), and every model shows this pattern. The VAE leads on large
+tumors ($0.65$ vs.\ $0.57$), but
 f-AnoGAN has the fewest near-complete misses: 8.7\% of subjects have Dice $<0.2$,
 compared with 11.7\% for the VAE, 14.7\% for the AE and 28.2\% for the baseline.
 f-AnoGAN's scattered false positives thus mostly hurt on large tumors, where
@@ -351,41 +357,39 @@ subject's $64\times64$ slices). Error bars show the standard error.}
 \label{fig:size}
 \end{figure}
 
-\textbf{Caveats.} Each number comes from a single run (seed 42), so differences
-of a few Dice points are not yet established. Our template-mask skull stripping
-leaves a thin rim of skull on some IXI scans, and MSD scans were skull-stripped
-and resampled differently, so part of every residual reflects domain shift.
+\textbf{Caveats.} Each number comes from a single training run (seed 42), so
+differences of a few Dice points are not yet established. Assumption (A4) holds
+only partly: template-mask skull stripping leaves a thin rim of skull on some IXI
+scans, so part of every residual reflects domain shift.
 
 %=============================================================================
 \section{Conclusion and Updated Plan}
 %=============================================================================
 
-\textbf{Progress.} The full pipeline works end to end, from download to
-figures. At $64\times64$, both generative models clearly beat a plain AE, the
-VAE is best on average and f-AnoGAN is the most consistent. \textbf{Changes from the proposal:}
-we had to write our own registration and T2 template because no standard tool
-runs on our hardware, and we added the intensity baseline and the
-positive-residual scoring after reviewing~\citet{meissen2021challenging}.
+\textbf{Progress.} In our single-seed $64\times64$ runs, both generative models beat a
+plain AE, the VAE is best on average and f-AnoGAN has the fewest near-complete
+misses. \textbf{Changes from the proposal:}
+our own registration and T2 template (no standard tool runs on our hardware),
+plus the intensity baseline and positive-residual scoring
+from~\citet{meissen2021challenging}.
 
 \textbf{Next steps (by priority).}
-(1)~\emph{Robustness:} retrain each model with 3 seeds, report bootstrap
-confidence intervals over subjects, and run a paired Wilcoxon test of VAE vs.\
-f-AnoGAN Dice.
+(1)~\emph{Robustness:} 3 seeds per model, bootstrap confidence intervals over
+subjects, and a paired Wilcoxon test of VAE vs.\ f-AnoGAN Dice.
 (2)~\emph{Resolution:} train at $128\times128$, the proposal's main setting.
-This costs about 4$\times$ more compute (an estimated 12\,h for AE and VAE and
-over 24\,h for f-AnoGAN on the laptop CPU), so we plan to migrate training to
-a Google Colab GPU runtime for much faster runs.
+This needs about 4$\times$ more compute (over 24\,h for f-AnoGAN on the laptop
+CPU), so we plan to migrate training to a Google Colab GPU runtime.
 (3)~\emph{VAE trade-off:} sweep $\beta\in\{0.5,1,2\}$ and latent size
 $d\in\{128,256\}$ to measure how blur trades sharpness against false alarms.
-(4)~\emph{Error analysis:} break down results by MSD tumor sub-region, and test whether running HD-BET~\cite{isensee2019hdbet}
-skull stripping on Colab reduces border false positives.
+(4)~\emph{Error analysis:} results by tumor sub-region, and whether
+HD-BET~\cite{isensee2019hdbet} skull stripping on Colab reduces border false
+positives (testing A4).
 
 \textbf{Timeline.}
-\emph{Weeks of Nov 9 and Nov 16:} seed repeats and confidence intervals at
-$64\times64$; migrate to a Colab GPU runtime; start the $128\times128$ runs.
-\emph{Week of Nov 23:} $\beta$/latent sweep; sub-region analysis.
-\emph{Week of Nov 30:} HD-BET ablation; freeze experiments.
-\emph{Week of Dec 7:} final report.
+\emph{Nov 9--20:} seed repeats and confidence intervals; migrate to a Colab GPU
+runtime; start $128\times128$ runs. \emph{Nov 23:} $\beta$/latent sweep;
+sub-region analysis. \emph{Nov 30:} HD-BET ablation; freeze experiments.
+\emph{Dec 7:} final report.
 
 \clearpage
 \bibliography{references}
