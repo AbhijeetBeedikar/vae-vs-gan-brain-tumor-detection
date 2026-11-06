@@ -16,6 +16,20 @@
 \usepackage[preprint]{icml2026}
 \makeatletter
 \renewcommand{\ICML@preprint}{\textit{STAT 453 Midway Report, November 2026.}}
+% The template's first-page footnote normally ends with "Correspondence to:
+% <name> <email>" and errors if no corresponding author is given. We print only
+% the affiliation and the course notice, with no personal name or email.
+\renewcommand{\printAffiliationsAndNotice}[1]{\global\icml@noticeprintedtrue%
+  \stepcounter{@affiliationcounter}%
+  {\let\thefootnote\relax\footnotetext{\hspace*{-\footnotesep}\ificmlshowauthors #1\fi%
+      \forloop{@affilnum}{1}{\value{@affilnum} < \value{@affiliationcounter}}{
+        \textsuperscript{\arabic{@affilnum}}\csname @affilname\the@affilnum\endcsname
+      }.%
+      \ \\
+      \Notice@String
+    }
+  }
+}
 \makeatother
 
 \usepackage{amsmath}
@@ -38,7 +52,6 @@
   \end{icmlauthorlist}
 
   \icmlaffiliation{uw}{Department of Statistics, University of Wisconsin--Madison, Madison, WI, USA}
-  \icmlcorrespondingauthor{Abhijeet Beedikar}{abhijeetbeedikar@gmail.com}
 
   \icmlkeywords{Anomaly detection, VAE, GAN, brain MRI}
   \vskip 0.3in
