@@ -96,6 +96,10 @@ results/            committed metrics and figures
 
 ## Reproducing
 
+A detailed step-by-step walkthrough, covering what each stage does, what
+happened when we ran it, timings, expected numbers and troubleshooting, is in
+[docs/REPRODUCING.md](docs/REPRODUCING.md). The short version:
+
 ```bash
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install torch --index-url https://download.pytorch.org/whl/cpu   # or a CUDA build
