@@ -5,6 +5,8 @@ For each step it explains **what the step does**, **how it works**, **what
 happened when we ran it** (numbers, problems, fixes) and **the exact commands**
 to repeat it yourself.
 
+**Repository:** <https://github.com/AbhijeetBeedikar/vae-vs-gan-brain-tumor-detection>
+
 Total time on a laptop CPU is roughly **1 day**: about 1.5 h preprocessing,
 about 6 h training (three models in parallel), about 15 min evaluation, plus
 the download.
@@ -49,8 +51,8 @@ download  ->  preprocess (register, skull-strip, normalise, slice)  ->  split by
 ## Step 1. Get the code
 
 ```bash
-git clone https://github.com/<you>/<repo>.git
-cd <repo>
+git clone https://github.com/AbhijeetBeedikar/vae-vs-gan-brain-tumor-detection.git
+cd vae-vs-gan-brain-tumor-detection
 ```
 
 **What's inside** (and the order it was originally written, matching the git
@@ -433,7 +435,9 @@ pages plus 1 page of references.
 
 The project was committed step by step (see the table in Step 1).
 `.gitignore` keeps out `data/`, `runs/` (checkpoints), virtual environments
-and LaTeX build files, so everything pushed is small. To publish it:
+and LaTeX build files, so everything pushed is small. The project lives at
+<https://github.com/AbhijeetBeedikar/vae-vs-gan-brain-tumor-detection>.
+To publish your own copy:
 
 1. Create an **empty** repository on GitHub (no README, licence or
    .gitignore).
