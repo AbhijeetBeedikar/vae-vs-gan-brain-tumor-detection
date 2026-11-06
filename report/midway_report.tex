@@ -11,16 +11,12 @@
 \newcommand{\theHalgorithm}{\arabic{algorithm}}
 
 % [preprint] shows the author names (the default blind mode hides them) and,
-% unlike [accepted], does not print an ICML proceedings notice.
+% unlike [accepted], does not print an ICML proceedings notice. The notice
+% line at the end of the first-page footnote (where published papers say
+% "Proceedings of ICML ...") is replaced with the course name.
 \usepackage[preprint]{icml2026}
 \makeatletter
-% The template normally prints a first-page footnote with the authors'
-% affiliations, a "Correspondence to: <name> <email>" line and a notice, plus a
-% superscript affiliation number after each author name. We leave all of that
-% out: \printAffiliationsAndNotice only records that it was called (so the
-% template does not warn), and \@pa (the per-author superscript) prints nothing.
-\renewcommand{\printAffiliationsAndNotice}[1]{\global\icml@noticeprintedtrue}
-\renewcommand{\@pa}[1]{}
+\renewcommand{\ICML@preprint}{\textit{STAT 453 Midway Report, November 2026.}}
 \makeatother
 
 \usepackage{amsmath}
@@ -41,6 +37,13 @@
     \icmlauthor{Diya Kothari}{uw}
     \icmlauthor{Daksh Kacham}{uw}
   \end{icmlauthorlist}
+
+  % These fill the first-page footnote: "1Department of ... Correspondence to: ..."
+  \icmlaffiliation{uw}{Department of Statistics, University of Wisconsin--Madison, Madison, WI, USA}
+  \icmlcorrespondingauthor{Jenny Brant}{jobrant@wisc.edu}
+  \icmlcorrespondingauthor{Abhijeet Beedikar}{beedikar@wisc.edu}
+  \icmlcorrespondingauthor{Diya Kothari}{ddkothari@wisc.edu}
+  \icmlcorrespondingauthor{Daksh Kacham}{kacham@wisc.edu}
 
   \icmlkeywords{Anomaly detection, VAE, GAN, brain MRI}
   \vskip 0.3in
@@ -335,9 +338,8 @@ $0.65$ (large), and every model shows this pattern. The groups also separate the
 two generative models. The VAE leads on large tumors ($0.65$ vs.\ $0.57$), but
 f-AnoGAN has the fewest near-complete misses: 8.7\% of subjects have Dice $<0.2$,
 compared with 11.7\% for the VAE, 14.7\% for the AE and 28.2\% for the baseline.
-This suggests that the VAE's blur hides small lesions less than we expected,
-while f-AnoGAN's scattered false positives mostly hurt on large tumors, where
-Dice is dominated by boundary quality.
+f-AnoGAN's scattered false positives thus mostly hurt on large tumors, where
+Dice depends on boundary quality.
 
 \begin{figure}[t]
 \centering
@@ -356,11 +358,9 @@ and resampled differently, so part of every residual reflects domain shift.
 \section{Conclusion and Updated Plan}
 %=============================================================================
 
-\textbf{Progress.} The full pipeline is working end to end: data download,
-custom registration and preprocessing, three models, a baseline, evaluation and
-figures. Our first results already answer the proposal's question at
-$64\times64$. Both generative models clearly beat a plain AE, the VAE is best on
-average and f-AnoGAN is the most consistent. \textbf{Changes from the proposal:}
+\textbf{Progress.} The full pipeline works end to end, from download to
+figures. At $64\times64$, both generative models clearly beat a plain AE, the
+VAE is best on average and f-AnoGAN is the most consistent. \textbf{Changes from the proposal:}
 we had to write our own registration and T2 template because no standard tool
 runs on our hardware, and we added the intensity baseline and the
 positive-residual scoring after reviewing~\citet{meissen2021challenging}.
@@ -381,8 +381,7 @@ skull stripping on Colab reduces border false positives.
 \textbf{Timeline.}
 \emph{Weeks of Nov 9 and Nov 16:} seed repeats and confidence intervals at
 $64\times64$; migrate to a Colab GPU runtime; start the $128\times128$ runs.
-\emph{Week of Nov 23:} $\beta$ and latent-size sweep; sub-region and tumor-size
-analysis.
+\emph{Week of Nov 23:} $\beta$/latent sweep; sub-region analysis.
 \emph{Week of Nov 30:} HD-BET ablation; freeze experiments.
 \emph{Week of Dec 7:} final report.
 
