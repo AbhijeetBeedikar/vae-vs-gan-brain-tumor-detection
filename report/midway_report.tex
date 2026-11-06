@@ -226,7 +226,8 @@ Dice on a held-out MSD validation set. A slice's score is the mean of its top
 $|\mathbf{x}-\hat{\mathbf{x}}|$ as an ablation. The \emph{intensity baseline}
 uses $\hat{\mathbf{x}}=\mathbf{0}$, so it detects ``bright = tumor''.
 
-\textbf{Challenge 3: compute.} We have no GPU. On the native ARM64 PyTorch build
+\textbf{Challenge 3: compute.} All results so far were run without a GPU, on a
+Windows laptop with an ARM processor. On the native ARM64 PyTorch build
 the AE trained at only 257 images/s. The x64 build, running under Windows
 emulation, uses optimized oneDNN kernels and reached 670 images/s. We therefore
 train with the x64 build, running all three models in parallel with 4 threads
@@ -368,18 +369,16 @@ confidence intervals over subjects, and run a paired Wilcoxon test of VAE vs.\
 f-AnoGAN Dice.
 (2)~\emph{Resolution:} train at $128\times128$, the proposal's main setting.
 This costs about 4$\times$ more compute (an estimated 12\,h for AE and VAE and
-over 24\,h for f-AnoGAN on CPU). We plan to use a GPU from Google Colab or the
-department, and to fall back to fewer GAN epochs if needed.
+over 24\,h for f-AnoGAN on the laptop CPU), so we plan to migrate training to
+a Google Colab GPU runtime for much faster runs.
 (3)~\emph{VAE trade-off:} sweep $\beta\in\{0.5,1,2\}$ and latent size
-$d\in\{128,256\}$ (the proposal's range) to measure how blur trades sharpness
-against false alarms.
-(4)~\emph{Error analysis:} break down results by tumor sub-region using MSD's
-edema, non-enhancing and enhancing labels, and test whether running HD-BET~\cite{isensee2019hdbet}
+$d\in\{128,256\}$ to measure how blur trades sharpness against false alarms.
+(4)~\emph{Error analysis:} break down results by MSD tumor sub-region, and test whether running HD-BET~\cite{isensee2019hdbet}
 skull stripping on Colab reduces border false positives.
 
 \textbf{Timeline.}
 \emph{Weeks of Nov 9 and Nov 16:} seed repeats and confidence intervals at
-$64\times64$; set up the GPU environment; start the $128\times128$ runs.
+$64\times64$; migrate to a Colab GPU runtime; start the $128\times128$ runs.
 \emph{Week of Nov 23:} $\beta$ and latent-size sweep; sub-region and tumor-size
 analysis.
 \emph{Week of Nov 30:} HD-BET ablation; freeze experiments.
